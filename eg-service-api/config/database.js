@@ -9,5 +9,21 @@ const config = {
     database: process.env.DB_NAME,
   }
 };
+const db = knex(config);
 
-module.exports = knex(config);
+
+const connectDB = async () => {
+  try {
+    await db.raw('SELECT 1+1 AS result');
+    console.log('Database connection established');
+    return db;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    throw error;
+  }
+}
+
+module.exports = {
+  connectDB,
+  db
+};

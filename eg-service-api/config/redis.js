@@ -6,4 +6,17 @@ const redis = new Redis({
   password: process.env.REDIS_PASSWORD,
 });
 
-module.exports = redis;
+const connectRedis = async () => {
+  try {
+    await redis.ping();
+    console.log('Redis connection established');
+  } catch (error) {
+    console.error('Redis connection failed:', error);
+    throw error;
+  }
+}
+
+module.exports = {
+  connectRedis,
+  redis,
+}
