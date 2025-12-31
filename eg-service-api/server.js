@@ -4,6 +4,7 @@ const { connectDB } = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const { checkElasticsearchConnection } = require('./config/elasticsearch');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
+const eventRoutes = require('./controllers/event.controller');
 
 const app = express()
 const PORT = process.env.PORT || 3000;
@@ -15,6 +16,8 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
+
+app.use('/api', eventRoutes);
 
 app.use(errorHandler);
 app.use(notFound);
