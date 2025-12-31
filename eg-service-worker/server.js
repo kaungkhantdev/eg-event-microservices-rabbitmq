@@ -46,6 +46,7 @@ const startWorker = async () => {
       console.log('Shutting down worker...');
       await elasticsearchWorker.close();
       server.close();
+      await redis.quit();
       process.exit(0);
     };
 

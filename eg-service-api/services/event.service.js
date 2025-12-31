@@ -14,6 +14,9 @@ const createNewEventAndAddQueue = async (eventData) => {
         operation: 'create',
         eventId: event.id,
         startDate: event.startDate,
+        location: event.location,
+        description: event.description,
+        recipientEmail: 'apipostman20@gmail.com'
       }),
       addEventToElasticsearchQueue({
         operation: 'create',
