@@ -7,9 +7,20 @@ const createNewEventAndAddQueue = async (eventData) => {
 
   try {
     const event = await createEvent(eventData, trx);
+    console.log('Event created with ID:', event.id);
 
-    await addEventToQueue(event);
-    await addEventToElasticsearchQueue(event);
+    await Promise.all([
+      addEventToQueue({
+        operation: 'create',
+        eventId: event.id,
+        startDate: event.startDate,
+      }),
+      addEventToElasticsearchQueue({
+        operation: 'create',
+        eventId: event.id,
+        data: event
+      })
+    ]);
 
     await trx.commit();
     return event;
@@ -43,6 +54,13 @@ const getEvent = async (id) => {
 const updateExistingEvent = async (id, updateData) => {
   try {
     const event = await updateEvent(id, updateData);
+
+    await addEventToElasticsearchQueue({
+      operation: 'update',
+      eventId: event.id,
+      data: event
+    });
+
     return event;
   } catch (error) {
     console.error('Error updating event:', error);
@@ -53,6 +71,12 @@ const updateExistingEvent = async (id, updateData) => {
 const removeEvent = async (id) => {
   try {
     await deleteEvent(id);
+
+    await addEventToElasticsearchQueue({
+      operation: 'delete',
+      eventId: id
+    });
+
     return true;
   } catch (error) {
     console.error('Error deleting event:', error);
