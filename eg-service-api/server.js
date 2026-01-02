@@ -5,6 +5,7 @@ const { connectRedis } = require('./config/redis');
 const { checkElasticsearchConnection } = require('./config/elasticsearch');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const eventRoutes = require('./controllers/event.controller');
+const { connectRabbitMQ } = require('./config/rabbitmq');
 
 const app = express()
 const PORT = process.env.PORT || 3000;
@@ -25,7 +26,8 @@ app.use(notFound);
 const startServer = async () => {
   try {
     await connectDB();
-    await connectRedis();
+    // await connectRedis();
+    await connectRabbitMQ();
     await checkElasticsearchConnection();
 
     app.listen(PORT, () => {
