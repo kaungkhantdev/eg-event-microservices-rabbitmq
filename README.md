@@ -1,6 +1,6 @@
-# EG Event Services
+# EG Event Services with RabbitMQ
 
-A microservices-based event management system built with Node.js, featuring event creation, asynchronous processing, and email notifications.
+A microservices-based event management system built with Node.js, featuring event creation, asynchronous processing, and email notifications using RabbitMQ message broker.
 
 ## Architecture Overview
 
@@ -13,7 +13,7 @@ This project consists of three independent microservices that work together to h
 └────────┬────────┘
          │
          ├─> PostgreSQL (Event storage)
-         ├─> Redis (Queue management)
+         ├─> RabbitMQ (Message broker)
          └─> Elasticsearch (Event indexing)
               ↓
          ┌────────────────┐
@@ -38,7 +38,7 @@ This project consists of three independent microservices that work together to h
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: PostgreSQL
-- **Queue**: BullMQ with Redis
+- **Message Broker**: RabbitMQ (amqplib)
 - **Search**: Elasticsearch
 - **Email**: Nodemailer with Handlebars templates
 - **Validation**: Joi
@@ -47,7 +47,7 @@ This project consists of three independent microservices that work together to h
 
 - Node.js (v14 or higher)
 - PostgreSQL (v12 or higher)
-- Redis (v6 or higher)
+- RabbitMQ (v3.8 or higher)
 - Elasticsearch (v7 or higher)
 
 ## Quick Start
@@ -130,35 +130,35 @@ npm run dev
 
 1. Client sends POST request to create an event via API service
 2. API service validates and stores event in PostgreSQL
-3. API service adds two jobs to Redis queues:
-   - Elasticsearch indexing job
-   - Email notification job
-4. Worker service processes Elasticsearch job and indexes the event
-5. Mail service processes email job and sends notification
+3. API service publishes two messages to RabbitMQ queues:
+   - Elasticsearch indexing message
+   - Email notification message
+4. Worker service consumes Elasticsearch messages and indexes the event
+5. Mail service consumes email messages and sends notification
 
 ## Project Structure
 
 ```
-eg-event-services/
+eg-event-services-rabbitmq/
 ├── eg-service-api/          # REST API service
-│   ├── config/              # Database, Redis, Elasticsearch config
+│   ├── config/              # Database, RabbitMQ, Elasticsearch config
 │   ├── controllers/         # Route controllers
 │   ├── middleware/          # Validation and error handling
 │   ├── migrations/          # Database migrations
 │   ├── repository/          # Data access layer
-│   ├── services/            # Business logic and queue setup
+│   ├── services/            # Business logic and RabbitMQ publisher
 │   └── server.js            # Main entry point
 │
 ├── eg-service-worker/       # Background worker
-│   ├── config/              # Database, Redis, Elasticsearch config
-│   ├── processors/          # Job processors
+│   ├── config/              # Database, RabbitMQ, Elasticsearch config
+│   ├── processors/          # Message processors
 │   ├── repository/          # Data access layer
-│   ├── services/            # Queue consumer setup
+│   ├── services/            # RabbitMQ consumer setup
 │   └── server.js            # Main entry point
 │
 └── eg-service-mail/         # Email service
-    ├── config/              # Redis config
-    ├── services/            # Email and queue services
+    ├── config/              # RabbitMQ config
+    ├── services/            # Email and RabbitMQ consumer services
     ├── templates/           # Handlebars email templates
     └── server.js            # Main entry point
 ```
@@ -191,20 +191,20 @@ Each service provides health check endpoints:
 - Worker Service: `http://localhost:3005/health`
 - Mail Service: `http://localhost:3004/health`
 
-Health endpoints return service status and dependency health (database, Redis, queue stats).
+Health endpoints return service status and dependency health (database, RabbitMQ connection, queue stats).
 
 ## Troubleshooting
 
 ### Services won't start
 
-- Ensure PostgreSQL, Redis, and Elasticsearch are running
+- Ensure PostgreSQL, RabbitMQ, and Elasticsearch are running
 - Check `.env` configuration in each service
 - Verify port availability (3000, 3004, 3005)
 
 ### Events not being processed
 
-- Check Redis connection in all services
-- Monitor queue status via health endpoints
+- Check RabbitMQ connection in all services
+- Monitor queue status via RabbitMQ management UI (default: http://localhost:15672)
 - Check worker service logs for processing errors
 
 ### Emails not sending
