@@ -4,6 +4,8 @@ const { connectDB, db } = require('./config/database');
 const { connectRedis, redis } = require('./config/redis');
 const { checkElasticsearchConnection, initializeIndex } = require('./config/elasticsearch');
 const elasticsearchWorker = require('./services/queue.service');
+const { connectRabbitMQ } = require('./config/rabbitmq');
+const { consumeEvents } = require('./services/rabbitmq.cosumer.service');
 
 const app = express();
 const HEALTH_PORT = process.env.HEALTH_PORT || 3005;
@@ -11,7 +13,9 @@ const HEALTH_PORT = process.env.HEALTH_PORT || 3005;
 const startWorker = async () => {
   try {
     await connectDB();
-    await connectRedis();
+    // await connectRedis();
+    await connectRabbitMQ();
+    await consumeEvents();
     await checkElasticsearchConnection();
     await initializeIndex();
 

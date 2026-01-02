@@ -2,24 +2,35 @@ require('dotenv').config();
 const express = require('express');
 const { connectRedis, redis } = require('./config/redis');
 const mailWorker = require('./services/queue.service');
+const { connectRabbitMQ, getConnection } = require('./config/rabbitmq');
+const { consumeEvents } = require('./services/rabbitmq.cosumer.service');
 
 const app = express();
 const PORT = process.env.PORT || 3004;
 
+let rabbitMQChannel = null;
+
 const startServer = async () => {
   try {
-    await connectRedis();
+    // await connectRedis();
+    rabbitMQChannel = await connectRabbitMQ();
+    await consumeEvents();
+
 
     app.get('/health', async (req, res) => {
       try {
         const redisHealthy = await redis.ping() === 'PONG';
         const jobCounts = await mailWorker.getJobCounts();
+        const rabbitMQHealthy = rabbitMQChannel !== null && !rabbitMQChannel.connection.closed;
 
-        res.status(redisHealthy ? 200 : 503).json({
-          status: redisHealthy ? 'healthy' : 'unhealthy',
+        const isHealthy = redisHealthy && rabbitMQHealthy;
+
+        res.status(isHealthy ? 200 : 503).json({
+          status: isHealthy ? 'healthy' : 'unhealthy',
           service: 'mail-service',
           dependencies: {
             redis: redisHealthy,
+            rabbitmq: rabbitMQHealthy,
           },
           queue: jobCounts,
         });
@@ -41,6 +52,13 @@ const startServer = async () => {
       await mailWorker.close();
       server.close();
       await redis.quit();
+
+      const rabbitConnection = getConnection();
+      if (rabbitConnection) {
+        await rabbitConnection.close();
+        console.log('RabbitMQ connection closed gracefully');
+      }
+
       process.exit(0);
     };
 

@@ -1,6 +1,7 @@
 const { createEvent, getEventById, updateEvent, deleteEvent, getAllEvents } = require('../repository/event.repository');
 const { addEventToQueue, addEventToElasticsearchQueue } = require('./queue.service');
 const { db } = require('../config/database');
+const { publishEvent } = require('./rabbitmq.producer.service');
 
 const createNewEventAndAddQueue = async (eventData) => {
   const trx = await db.transaction();
@@ -9,21 +10,30 @@ const createNewEventAndAddQueue = async (eventData) => {
     const event = await createEvent(eventData, trx);
     console.log('Event created with ID:', event.id);
 
-    await Promise.all([
-      addEventToQueue({
-        operation: 'create',
-        eventId: event.id,
-        startDate: event.startDate,
-        location: event.location,
-        description: event.description,
-        recipientEmail: 'apipostman20@gmail.com'
-      }),
-      addEventToElasticsearchQueue({
-        operation: 'create',
-        eventId: event.id,
-        data: event
-      })
-    ]);
+    // await Promise.all([
+    //   addEventToQueue({
+    //     operation: 'create',
+    //     eventId: event.id,
+    //     startDate: event.startDate,
+    //     location: event.location,
+    //     description: event.description,
+    //     recipientEmail: 'apipostman20@gmail.com'
+    //   }),
+    //   addEventToElasticsearchQueue({
+    //     operation: 'create',
+    //     eventId: event.id,
+    //     data: event
+    //   })
+    // ]);
+    await publishEvent({
+      operation: 'create',
+      eventId: event.id,
+      startDate: event.startDate,
+      location: event.location,
+      description: event.description,
+      recipientEmail: 'apipostman20@gmail.com',
+      data: event
+    });
 
     await trx.commit();
     return event;
